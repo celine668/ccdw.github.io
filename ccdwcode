@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语作文生成器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <div class="step" id="step1">
+            <h2>输入要学习的关键表达</h2>
+            <input type="text" id="keyExpression" placeholder="输入英语关键表达">
+            <button onclick="nextStep(1)">下一步</button>
+        </div>
+        
+        <div class="step" id="step2" style="display:none;">
+            <h2>输入作文主题</h2>
+            <input type="text" id="essayTopic" placeholder="输入作文主题（英语或中文）">
+            <button onclick="nextStep(2)">下一步</button>
+        </div>
+        
+        <div class="step" id="step3" style="display:none;">
+            <h2>输入作文难度</h2>
+            <input type="text" id="province" placeholder="所在省市">
+            <input type="text" id="examType" placeholder="年级/考试类型">
+            <input type="text" id="wordCount" placeholder="字数要求">
+            <button onclick="generateEssay()">生成范文</button>
+        </div>
+        
+        <div class="step" id="results" style="display:none;">
+            <h2>生成的范文</h2>
+            <div id="essayOutput"></div>
+            <button onclick="resetApp()">重新开始</button>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
