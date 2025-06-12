@@ -1,0 +1,155 @@
+let currentStep = 1;
+let keyExpression = '';
+let essayTopic = '';
+let essayDifficulty = {
+    province: '',
+    examType: '',
+    wordCount: ''
+};
+
+function nextStep(step) {
+    // 保存当前步骤数据
+    if (step === 1) {
+        keyExpression = document.getElementById('keyExpression').value;
+    } else if (step === 2) {
+        essayTopic = document.getElementById('essayTopic').value;
+    }
+    
+    // 隐藏当前步骤，显示下一步
+    document.getElementById(`step${step}`).style.display = 'none';
+    document.getElementById(`step${step+1}`).style.display = 'block';
+    currentStep = step+1;
+}
+
+async function generateEssay() {
+    // 保存难度设置
+    essayDifficulty.province = document.getElementById('province').value;
+    essayDifficulty.examType = document.getElementById('examType').value;
+    essayDifficulty.wordCount = document.getElementById('wordCount').value;
+    
+    // 显示加载状态
+    document.getElementById('step3').style.display = 'none';
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.style.display = 'block';
+    document.getElementById('essayOutput').innerHTML = '<p>正在生成范文，请稍候...</p>';
+    
+    try {
+        const essays = await generateSampleEssays();
+        displayEssays(essays);
+    } catch (error) {
+        console.error('生成范文过程中出错:', error);
+        document.getElementById('essayOutput').innerHTML = `<p>生成范文失败: ${error.message}</p>`;
+    }
+}
+
+async function generateSampleEssays() {
+    const essays = [];
+    
+    for (let i = 1; i <= 3; i++) {
+        try {
+            const essayContent = await callDeepSeekAPI(i);
+            essays.push(`
+                <div class="essay">
+                    <h3>范文 ${i}</h3>
+                    <p>主题: ${essayTopic}</p>
+                    <p>包含的关键表达: ${keyExpression}</p>
+                    <p>难度设置: ${essayDifficulty.province} | ${essayDifficulty.examType} | ${essayDifficulty.wordCount}字</p>
+                    <p>${essayContent}</p>
+                </div>
+            `);
+        } catch (error) {
+            console.error('生成范文出错:', error);
+            essays.push(`
+                <div class="essay">
+                    <h3>范文 ${i} (生成失败)</h3>
+                    <p>错误: ${error.message}</p>
+                </div>
+            `);
+        }
+    }
+    
+    return essays;
+}
+
+async function callDeepSeekAPI(index) {
+    const API_KEY = 'sk-5705c379b802427c98c215a3ca4ed46d';
+    const API_URL = 'https://api.deepseek.com/v1/chat/completions';
+    
+    // 精确的字数要求（输入字数+10个单词）
+    const inputWordCount = parseInt(essayDifficulty.wordCount) || 100;
+    const targetWordCount = inputWordCount + 10;
+    
+    const prompt = `请严格按照以下要求生成一篇英语作文：
+1. 为作文添加一个简洁的标题
+2. 主题：${essayTopic}
+3. 必须包含的关键表达：${keyExpression}
+4. 字数要求：${targetWordCount}个单词（比用户输入的字数要求多10个单词）
+5. 难度要求：
+   - 省市：${essayDifficulty.province}
+   - 考试类型：${essayDifficulty.examType}
+
+请确保作文内容自然流畅，合理使用给定的关键表达。作文格式应为：标题 + 空行 + 正文内容`;
+    
+    const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify({
+            model: "deepseek-chat",
+            messages: [
+                {
+                    role: "system",
+                    content: `你是一位英语写作专家，正在生成一篇英语范文。请严格确保作文字数比用户要求的字数多10个单词。不要添加任何额外的文字说明、字数统计或备注信息，只需生成纯作文内容。`
+                },
+                { role: "user", content: prompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 1000
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    const essayContent = data.choices[0].message.content;
+    
+    return essayContent;
+}
+
+function displayEssays(essays) {
+    const outputDiv = document.getElementById('essayOutput');
+    outputDiv.innerHTML = '';
+    
+    essays.forEach(essay => {
+        outputDiv.innerHTML += essay;
+    });
+}
+
+function resetApp() {
+    // 重置所有变量
+    keyExpression = '';
+    essayTopic = '';
+    essayDifficulty = {
+        province: '',
+        examType: '',
+        wordCount: ''
+    };
+    
+    // 重置输入字段
+    document.getElementById('keyExpression').value = '';
+    document.getElementById('essayTopic').value = '';
+    document.getElementById('province').value = '';
+    document.getElementById('examType').value = '';
+    document.getElementById('wordCount').value = '';
+    
+    // 显示第一步
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('step1').style.display = 'block';
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('step3').style.display = 'none';
+    currentStep = 1;
+}
